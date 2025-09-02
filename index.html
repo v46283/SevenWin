@@ -1,479 +1,308 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>行口專用對帳系統 v6（PWA）</title>
-  <style>
-    body{background:#0b0f14;color:#e6edf3;font-family:"Noto Sans TC",sans-serif;margin:0;padding:20px}
-    .card{background:#131923;border:1px solid #1f2937;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 8px rgba(0,0,0,.3)}
-    .card-h{padding:12px 16px;border-bottom:1px solid #1f2937;font-weight:bold;display:flex;justify-content:space-between;align-items:center}
-    .card-h .right{display:flex;gap:10px;align-items:center}
-    .card-b{padding:16px}
-    .row{display:grid;grid-template-columns:160px 90px 90px 110px 90px 110px 110px 120px 120px 56px;gap:10px;align-items:center;margin-bottom:10px}
-    .row-head{display:grid;grid-template-columns:160px 90px 90px 110px 90px 110px 110px 120px 120px 56px;gap:10px;color:#97a3b6;font-size:12px;margin-bottom:8px}
-    .input,select{width:100%;padding:8px;background:#0b1119;border:1px solid #1e2633;border-radius:8px;color:#fff;box-sizing:border-box}
-    select option{background:#0b1119}
-    .btn{background:#1a2432;color:#fff;padding:8px 12px;border:none;border-radius:8px;cursor:pointer}
-    .btn:hover{background:#202c3e}
-    .btn-primary{font-size:18px;padding:14px 20px;border-radius:10px;font-weight:700}
-    .btn-danger{background:#4a1f2a}
-    .muted{color:#97a3b6}
-    table{width:100%;border-collapse:collapse}
-    th,td{border:1px solid #2b3648;padding:8px}
-    th{background:#0f1520;color:#9fb5d1;text-align:left}
-    tfoot td{font-weight:bold}
-    @media print{
-      body{background:#fff;color:#000}
-      .card{box-shadow:none;border:none}
-      .no-print{display:none !important}
-      th,td{border:1px solid #444}
-    }
-  </style>
-
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0b0f14">
-  <link rel="icon" sizes="192x192" href="icons/icon-192.png">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>瀧港清算雲｜每日對帳</title>
+<style>
+  :root{--bg:#0b0f14;--card:#131923;--bd:#1f2937;--muted:#97a3b6;--txt:#e6edf3;--accent:#2a64ff}
+  body{background:#0b0f14;color:#e6edf3;font-family:"Noto Sans TC",sans-serif;margin:0;padding:20px}
+  .card{background:#131923;border:1px solid #1f2937;border-radius:12px;margin-bottom:16px;padding:16px}
+  .card h2{margin:0 0 12px}
+  label{display:block;margin:6px 0 3px}
+  input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #2a3140;background:#0b1119;color:#fff;box-sizing:border-box}
+  .grid{display:grid;gap:12px}
+  @media(min-width:1000px){.g2{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(3,1fr)}}
+  button{padding:10px 14px;font-size:15px;border:none;border-radius:10px;cursor:pointer;background:#2a64ff;color:#fff}
+  .ghost{background:#243047}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{border:1px solid #2b3648;padding:6px;text-align:center}
+  th{background:#1f2937}
+  #msg{margin-top:8px;color:#97a3b6}
+  .bar{position:fixed;left:16px;right:16px;bottom:16px;background:#0f1520;border:1px solid #223047;border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .badge{background:#172132;border:1px solid #2a3650;border-radius:10px;padding:6px 10px;margin-right:6px}
+  .right{display:flex;gap:10px;flex-wrap:wrap}
+  @media print{.no-print{display:none}}
+</style>
 </head>
 <body>
-  <!-- 首卡 -->
-  <div class="card no-print">
-    <div class="card-h">
-      <div>家禽行口專用自動化對帳系統</div>
-      <div class="right"><span class="muted">製作人：瀧港師ㄚ昇</span></div>
-    </div>
-    <div class="card-b" style="display:grid;grid-template-columns:200px 200px 1fr;gap:10px;align-items:center">
-      <div>
-        <label class="muted">交貨日期</label>
-        <input id="meta-date" class="input" type="date" />
-      </div>
-      <div>
-        <label class="muted">收貨人</label>
-        <input id="meta-recipient" class="input" placeholder="請輸入收貨人名稱" />
-      </div>
-      <div></div>
-    </div>
-  </div>
-
-  <!-- 出貨明細 -->
-  <div class="card no-print">
-    <div class="card-h">
-      <div>出貨明細（只需輸入：貨品、隻數、單價、公斤重、籠數其他系統會自行換算）</div>
-    </div>
-    <div class="card-b">
-      <div class="row-head">
-        <div>貨品</div><div>隻數</div><div>單價</div><div>公斤重</div><div>籠數</div><div>籠重(kg)</div>
-        <div>金額(整數)</div><div>每隻均重(斤兩)</div><div>每隻均價</div><div></div>
-      </div>
-      <div id="rows"></div>
-      <div style="margin-top:14px">
-        <button id="btn-add" class="btn btn-primary">＋ 新增品項</button>
+  <div class="card">
+    <h2>瀧港清算雲｜每日對帳</h2>
+    <div class="grid g3">
+      <div><label>對帳日期</label><input id="date" type="date"></div>
+      <div><label>屠宰費單價/隻</label><input id="price" type="number" value="20"></div>
+      <div class="right" style="align-items:center">
+        <span class="badge">雞籠/籠 100</span>
+        <span class="badge">下水/隻 3</span>
+        <span class="badge">雞油/台斤 10</span>
+        <span class="badge">運費/趟 300</span>
       </div>
     </div>
   </div>
 
-  <!-- 統計 -->
-  <div class="card no-print">
-    <div class="card-h">統計</div>
-    <div class="card-b">
-      總台斤（數值）：<span id="sum-catty">0.00</span> ｜ 總隻數：<span id="sum-birds">0</span> ｜ 總籠數：<span id="sum-cages">0</span> ｜ 
-      總金額（含籠費）：<span id="sum-amt">0</span>
+  <div class="card">
+    <h2>行口明細</h2>
+    <div class="right no-print" style="margin-bottom:8px">
+      <button class="ghost" id="btn-add">＋新增品項列</button>
+      <button class="ghost" id="btn-clear">清空全部</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:160px">行口</th>
+          <th style="width:180px">品項</th>
+          <th style="width:120px">件數</th>
+          <th style="width:120px">隻數</th>
+          <th class="no-print" style="width:100px">刪除</th>
+        </tr>
+      </thead>
+      <tbody id="rowsAll"></tbody>
+      <tfoot>
+        <tr>
+          <th>合計</th>
+          <th>—</th>
+          <th id="sum-cages">0</th>
+          <th id="sum-birds">0</th>
+          <th class="no-print">—</th>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>其他欄位</h2>
+    <div class="grid g3">
+      <div><label>雞油(台斤)</label><input id="oilCatty" type="number" step="0.1"></div>
+      <div><label>運輸趟次</label><input id="trips" type="number"></div>
+      <div><label>備註（選填）</label><input id="note"></div>
+    </div>
+    <div class="no-print" style="margin-top:12px">
+      <button id="btn-upload">送出紀錄</button>
+      <button id="btn-report" class="ghost">查看歷史報表</button>
+      <span id="msg"></span>
     </div>
   </div>
 
-  <!-- 對帳單 -->
-  <div class="card" id="stmt-card" style="display:none">
-    <div class="card-h">
-      <div>對帳單</div>
-      <div class="right">
-        <button id="btn-clear" class="btn no-print btn-danger">清空全部</button>
-        <button id="btn-export" class="btn no-print">匯出 CSV</button>
-        <button id="btn-print" class="btn no-print">列印對帳單</button>
-        <button id="btn-line" class="btn no-print">LINE 分享對帳單</button>
-      </div>
+  <div class="card">
+    <h2>今日摘要與試算</h2>
+    <div id="summaryText" style="margin-bottom:8px;color:#cfe0ff"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>日期</th><th>行口</th><th>品項摘要</th><th>件數</th><th>隻數</th>
+          <th>雞籠</th><th>屠宰費</th><th>下水</th><th>雞油重量</th>
+          <th>雞油金額</th><th>運輸趟次</th><th>今日應收款</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="bar no-print">
+    <div>
+      <span class="badge">件數 <span id="mini-cages">0</span></span>
+      <span class="badge">隻數 <span id="mini-birds">0</span></span>
+      <span class="badge">雞油 <span id="mini-oil">0</span></span>
+      <span class="badge">趟數 <span id="mini-trips">0</span></span>
     </div>
-    <div class="card-b">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div>日期：<span id="stmt-date"></span></div>
-        <div>收貨人：<span id="stmt-recipient"></span></div>
-      </div>
-      <table id="stmt-table">
-        <thead>
-          <tr>
-            <th>序</th><th>貨品</th><th>斤兩</th><th>隻數</th><th>單價</th><th>金額</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-        <tfoot>
-          <tr>
-            <td colspan="6" id="stmt-subtotals" style="white-space:pre-wrap"></td>
-          </tr>
-          <tr>
-            <td colspan="6" id="stmt-grand"></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
+    <div><b>今日應收款 NT$ <span id="mini-net">0</span></b></div>
   </div>
 
 <script>
-(function(){
-  const ITEMS_WEIGHTED = ["仿妹","仿角","文昌母","文昌角","土雞","甘蔗母","古早母","古早角","閹雞","烏骨雞","文昌雞"];
-  const ITEMS_FIXED = ["仿妹(下)","仿角(下)"];
-  const ITEMS = [...ITEMS_WEIGHTED, ...ITEMS_FIXED];
+/* 後端寫入與只讀報表（用你的既有 URL/密鑰） */
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxsIMCDNHxngJGH6zx9-o9t8jJPNeW_3vx8jSj3WyVW5rF8Go2aVfKmo3XI53eqsWH3/exec';
+const POST_SECRET = '88888888';
+const REPORT_BASE = 'https://script.google.com/macros/s/AKfycbxsIMCDNHxngJGH6zx9-o9t8jJPNeW_3vx8jSj3WyVW5rF8Go2aVfKmo3XI53eqsWH3/exec';
+const VIEW_SECRET = 'view-only-9999';
 
-  const CAGE_UNIT_KG = 9.2;
-  const CAGE_PRICE = 100;
-  const STORE_KEY = "supplier.v5.manualadd";
+/* 固定三家行口 + 可新增任意列 */
+const VENDORS = ['林學藝','吳富城','黃德源'];
+const ITEM_OPTIONS = ['','仿母','仿角','文母','文角','烏角','下雞'];
 
-  const $ = s => document.querySelector(s);
-  const el = {
-    date: $('#meta-date'),
-    recipient: $('#meta-recipient'),
-    rows: $('#rows'),
-    sumCatty: $('#sum-catty'),
-    sumBirds: $('#sum-birds'),
-    sumCages: $('#sum-cages'),
-    sumAmt: $('#sum-amt'),
-    btnAdd: $('#btn-add'),
-    btnClear: $('#btn-clear'),
-    btnExport: $('#btn-export'),
-    btnPrint: $('#btn-print'),
-    stmtCard: $('#stmt-card'),
-    stmtDate: $('#stmt-date'),
-    stmtRecipient: $('#stmt-recipient'),
-    stmtTableBody: document.querySelector('#stmt-table tbody'),
-    stmtSubtotals: $('#stmt-subtotals'),
-    stmtGrand: $('#stmt-grand')
+function $(id){return document.getElementById(id)}
+function num(v){const n=parseFloat(v);return isNaN(n)?0:n}
+
+/* === 自動日期（今日、跨日自動更新） === */
+function todayStr(){ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
+function maybeUpdateDate(){ const inp=$('date'); const t=todayStr(); if(!inp.value||inp.value!==t){ inp.value=t; calcAndPreview(); } }
+function msUntilNextMidnight(){ const now=new Date(); const next=new Date(now); next.setHours(24,0,0,0); return next-now+1000; }
+function scheduleMidnightTick(){ setTimeout(()=>{ maybeUpdateDate(); scheduleMidnightTick(); }, msUntilNextMidnight()); }
+maybeUpdateDate(); document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) maybeUpdateDate(); }); scheduleMidnightTick();
+
+/* 建立一列（行口、品項、件數、隻數） */
+function addRow(vendor='', item='', c=0, b=0){
+  const tr=document.createElement('tr');
+  // 行口
+  const tdV=document.createElement('td');
+  const selV=document.createElement('select');
+  [''].concat(VENDORS).forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;selV.appendChild(o)});
+  selV.value=vendor; tdV.appendChild(selV);
+  // 品項
+  const tdI=document.createElement('td');
+  const selI=document.createElement('select');
+  ITEM_OPTIONS.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;selI.appendChild(o)});
+  selI.value=item; tdI.appendChild(selI);
+  // 件數
+  const tdC=document.createElement('td');const inC=document.createElement('input');inC.type='number';inC.value=c;tdC.appendChild(inC);
+  // 隻數
+  const tdB=document.createElement('td');const inB=document.createElement('input');inB.type='number';inB.value=b;tdB.appendChild(inB);
+  // 刪除
+  const tdD=document.createElement('td');tdD.className='no-print';
+  const btn=document.createElement('button');btn.textContent='刪除';btn.className='ghost';
+  btn.onclick=()=>{tr.remove(); calcAndPreview();}; tdD.appendChild(btn);
+  tr.append(tdV,tdI,tdC,tdB,tdD);
+  [selV,selI,inC,inB].forEach(el=>el.addEventListener('input',calcAndPreview));
+  $('rowsAll').appendChild(tr);
+}
+function clearAllRows(){ $('rowsAll').innerHTML=''; calcAndPreview(); }
+
+/* 預設三家行口三列 */
+addRow('林學藝','',0,0);
+addRow('吳富城','',0,0);
+addRow('黃德源','',0,0);
+
+/* UI 按鈕 */
+$('btn-add').onclick = ()=> addRow('', '', 0, 0);
+$('btn-clear').onclick = ()=> clearAllRows();
+
+/* 人性化摘要（含沒進貨提示） */
+function humanSummaryByVendor(){
+  const perVendor = {};
+  [...$('rowsAll').querySelectorAll('tr')].forEach(tr=>{
+    const vendor = tr.querySelector('td:nth-child(1) select').value.trim();
+    const item   = tr.querySelector('td:nth-child(2) select').value.trim();
+    const c      = num(tr.querySelector('td:nth-child(3) input').value);
+    const b      = num(tr.querySelector('td:nth-child(4) input').value);
+    if(!vendor) return;
+    if(!perVendor[vendor]) perVendor[vendor]={c:0,b:0,items:{}};
+    perVendor[vendor].c+=c; perVendor[vendor].b+=b;
+    if(item){
+      if(!perVendor[vendor].items[item]) perVendor[vendor].items[item]={c:0,b:0};
+      perVendor[vendor].items[item].c+=c;
+      perVendor[vendor].items[item].b+=b;
+    }
+  });
+  const parts=[];
+  VENDORS.forEach(v=>{
+    if(!(v in perVendor)) return;
+    const rec=perVendor[v];
+    if(rec.c===0 && rec.b===0){ parts.push(`${v}今天沒有進貨`); }
+    else{
+      const itemSent = Object.entries(rec.items).map(([name,val])=>`${name}有 ${val.c} 件共 ${val.b} 隻`);
+      parts.push(itemSent.length? `${v}：今天${itemSent.join('，')}` : `${v}今天沒有進貨`);
+    }
+  });
+  return parts.length ? parts.join('；') : '（今天尚未輸入任何行口與品項）';
+}
+
+/* 計算 + 預覽 + 明細說明 + 即時列 */
+function calcAndPreview(){
+  const d = $('date').value.trim();
+  const price = num($('price').value);
+
+  // 合計件/隻
+  let totalC=0,totalB=0;
+  [...$('rowsAll').querySelectorAll('tr')].forEach(tr=>{
+    totalC += num(tr.querySelector('td:nth-child(3) input').value);
+    totalB += num(tr.querySelector('td:nth-child(4) input').value);
+  });
+  $('sum-cages').textContent = totalC;
+  $('sum-birds').textContent = totalB;
+
+  const oil   = num($('oilCatty').value);
+  const trips = num($('trips').value);
+
+  const cageFee   = totalC * 100;
+  const slaughter = totalB * price;
+  const offal     = totalB * 3;
+  const oilAmt    = oil   * 10;
+  const freight   = trips * 300;
+
+  // 貨款合計
+  const netVendor = (slaughter - offal) + freight - cageFee - oilAmt;
+
+  // 行口組合（去重）
+  const vendorSet=new Set();
+  [...$('rowsAll').querySelectorAll('tr')].forEach(tr=>{
+    const v=tr.querySelector('td:nth-child(1) select').value.trim();
+    if(v) vendorSet.add(v);
+  });
+  const vendorCombo = vendorSet.size ? Array.from(vendorSet).join('+') : '（未選擇）';
+
+  // 人性化摘要 + 費用明細 + 公式
+  const human = humanSummaryByVendor();
+  const detailHTML = `
+    <div>${human}</div>
+    <div style="margin-top:8px">費用明細：</div>
+    <ul style="margin:6px 0 0 16px; text-align:left; line-height:1.6">
+      <li>雞籠：${totalC} 件 × 100 元 = ${cageFee} 元</li>
+      <li>屠宰費：${totalB} 隻 × ${price} 元 = ${slaughter} 元</li>
+      <li>下水：${totalB} 隻 × 3 元 = ${offal} 元</li>
+      <li>雞油金額：${oil} 台斤 × 10 元 = ${oilAmt} 元</li>
+      <li>運費：${trips} 趟 × 300 元 = ${freight} 元</li>
+    </ul>
+    <div style="margin-top:8px"><b>今日貨款：${slaughter} − ${offal} + ${freight} − ${cageFee} − ${oilAmt} = ${netVendor} 元</b></div>
+  `;
+  $('summaryText').innerHTML = detailHTML;
+
+  // 預覽表格
+  const tb = $('tbody'); tb.innerHTML='';
+  const tr = document.createElement('tr');
+  [ d, vendorCombo, human, totalC, totalB,
+    cageFee, slaughter, offal, oil, oilAmt, trips, netVendor
+  ].forEach(v=>{ const td=document.createElement('td'); td.textContent=v; tr.appendChild(td); });
+  tb.appendChild(tr);
+
+  // 底部即時列
+  $('mini-cages').textContent = totalC;
+  $('mini-birds').textContent = totalB;
+  $('mini-oil').textContent   = oil;
+  $('mini-trips').textContent = trips;
+  $('mini-net').textContent   = netVendor.toLocaleString('zh-Hant-TW');
+
+  return {d, vendorCombo, human, totalC, totalB, oil, trips, price, netVendor};
+}
+
+/* 初次計算與輸入監聽 */
+calcAndPreview();
+document.addEventListener('input', e=>{
+  if(['date','price','oilCatty','trips','note'].includes(e.target.id)) calcAndPreview();
+});
+
+/* 送出紀錄（no-cors；後端重算並追加寫入） */
+$('btn-upload').onclick = async ()=>{
+  const snap = calcAndPreview();
+  const body = {
+    date: snap.d,
+    vendor: snap.vendorCombo,
+    item: snap.human,
+    cages: snap.totalC,
+    birds: snap.totalB,
+    oilCatty: snap.oil,
+    trips: snap.trips,
+    pricePerBird: snap.price,
+    note: $('note').value.trim(),
+    secret: POST_SECRET,
+    ts: Date.now()
   };
-
-  const state = {
-    date: "",
-    recipient: "",
-    rows: [] // {item,birds,price,kgGross,cages,kgCage,catty,amount,avgCattyPerBird_jl,avgPricePerBird}
-  };
-
-  const toNum = v => isNaN(parseFloat(v))?0:parseFloat(v);
-  const round2 = n => Math.round((n+Number.EPSILON)*100)/100;
-  const isFixed = name => ITEMS_FIXED.includes(name);
-  const typeOf = name => isFixed(name)?'固定':'重量';
-
-  function toJinLiang(catty){
-    let jin = Math.floor(catty);
-    let liang = Math.round((catty - jin) * 16);
-    if(liang === 16){ jin += 1; liang = 0; }
-    return {jin, liang, text: `${jin}斤${liang}兩`};
+  $('btn-upload').disabled = true; $('msg').textContent = '上傳中…';
+  try{
+    await fetch(WEBAPP_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(body) });
+    $('msg').textContent = '✅ 已送出。請到試算表檢查是否新增一列。';
+  }catch(e){
+    $('msg').textContent = '上傳失敗：'+e;
+  }finally{
+    $('btn-upload').disabled = false;
   }
+};
 
-  function buildItemSelect(value){
-    const sel=document.createElement('select'); sel.className='input';
-    sel.appendChild(new Option('', '')); // 預設空白
-    ITEMS.forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
-    sel.value = value || '';
-    return sel;
-  }
-
-  function calc(row){
-    row.kgCage = round2(toNum(row.cages) * CAGE_UNIT_KG);
-    const netKg = Math.max(0, toNum(row.kgGross) - toNum(row.kgCage));
-    row.catty = round2(netKg / 0.6);
-
-    if(typeOf(row.item)==='重量'){
-      row.amount = Math.round(row.catty * toNum(row.price));
-    }else{
-      row.amount = Math.round(toNum(row.birds) * toNum(row.price));
-    }
-
-    const birds = toNum(row.birds);
-    if(birds>0){
-      const avgCatty = row.catty / birds;
-      row.avgCattyPerBird_jl = toJinLiang(avgCatty).text;
-      row.avgPricePerBird = Math.round(row.amount / birds);
-    }else{
-      row.avgCattyPerBird_jl = '';
-      row.avgPricePerBird = 0;
-    }
-  }
-
-  function isFilledRow(r){
-    const hasItem = (r.item && r.item.trim() !== '');
-    const hasNum = (toNum(r.birds)>0 || toNum(r.price)>0 || toNum(r.kgGross)>0 || toNum(r.cages)>0);
-    return hasItem || hasNum;
-  }
-
-  function rowView(r, idx){
-    const wrap=document.createElement('div'); wrap.className='row';
-    const sel=buildItemSelect(r.item);
-    const birds=document.createElement('input'); birds.type='number'; birds.step='1'; birds.min='0'; birds.value=r.birds||0; birds.className='input';
-    const price=document.createElement('input'); price.type='number'; price.step='1'; price.min='0'; price.value=r.price||0; price.className='input';
-    const kgGross=document.createElement('input'); kgGross.type='number'; kgGross.step='0.1'; kgGross.min='0'; kgGross.value=r.kgGross||0; kgGross.className='input';
-    const cages=document.createElement('input'); cages.type='number'; cages.step='1'; cages.min='0'; cages.value=r.cages||0; cages.className='input';
-    const kgCage=document.createElement('input'); kgCage.className='input'; kgCage.disabled=true; kgCage.value=r.kgCage||0;
-    const amount=document.createElement('input'); amount.className='input'; amount.disabled=true; amount.value=r.amount||0;
-    const avgCatty=document.createElement('input'); avgCatty.className='input'; avgCatty.disabled=true; avgCatty.value=r.avgCattyPerBird_jl||'';
-    const avgPrice=document.createElement('input'); avgPrice.className='input'; avgPrice.disabled=true; avgPrice.value=r.avgPricePerBird||0;
-    const del=document.createElement('button'); del.className='btn'; del.textContent='刪';
-
-    function update(){
-      r.item=sel.value; r.birds=toNum(birds.value); r.price=toNum(price.value);
-      r.kgGross=toNum(kgGross.value); r.cages=toNum(cages.value);
-      calc(r);
-      kgCage.value=r.kgCage; amount.value=r.amount; avgCatty.value=r.avgCattyPerBird_jl; avgPrice.value=r.avgPricePerBird;
-      computeSum(); renderStatement(); persist();
-    }
-
-    sel.onchange=update; birds.oninput=update; price.oninput=update; kgGross.oninput=update; cages.oninput=update;
-    del.onclick=()=>{ state.rows.splice(idx,1); render(); computeSum(); renderStatement(); persist(); };
-
-    update();
-    wrap.append(sel,birds,price,kgGross,cages,kgCage,amount,avgCatty,avgPrice,del);
-    return wrap;
-  }
-
-  function render(){
-    el.rows.innerHTML='';
-    state.rows.forEach((r,i)=> el.rows.appendChild(rowView(r,i)));
-  }
-
-  function computeSum(){
-    let sCatty=0, sBird=0, sCage=0, sAmt=0;
-    state.rows.filter(isFilledRow).forEach(r=>{ sCatty += toNum(r.catty); sBird += toNum(r.birds); sCage += toNum(r.cages); sAmt += toNum(r.amount); });
-    const cageFee = Math.round(sCage * CAGE_PRICE);
-    el.sumCatty.textContent=sCatty.toFixed(2); el.sumBirds.textContent=sBird; el.sumCages.textContent=sCage;
-    el.sumAmt.textContent = (sAmt + cageFee).toLocaleString('zh-Hant-TW');
-  }
-
-  function isAllRowsEmpty(){
-    return state.rows.length===0 || state.rows.every(r => !isFilledRow(r));
-  }
-
-  function renderStatement(){
-    if(isAllRowsEmpty()){
-      el.stmtCard.style.display = "none";
-      return;
-    } else {
-      el.stmtCard.style.display = "";
-    }
-
-    el.stmtDate.textContent = state.date || new Date().toISOString().slice(0,10);
-    el.stmtRecipient.textContent = state.recipient || '—';
-
-    // 統計
-    let totalCages=0, totalAmount=0;
-    const aggWeighted = {}; // 重量品項台斤
-    let totalXiaBirds=0;
-    state.rows.filter(isFilledRow).forEach(r=>{
-      totalCages += toNum(r.cages);
-      totalAmount += toNum(r.amount);
-      if(typeOf(r.item)==='重量'){
-        aggWeighted[r.item]=(aggWeighted[r.item]||0)+toNum(r.catty);
-      }else{
-        totalXiaBirds += toNum(r.birds);
-      }
-    });
-    const cageFee = Math.round(totalCages * CAGE_PRICE);
-
-    // 表身：先籠費，再各列
-    el.stmtTableBody.innerHTML='';
-    const addRow = (seq, name, jl, birds, unit, amt)=>{
-      const tr=document.createElement('tr');
-      const td=(t)=>{ const d=document.createElement('td'); d.textContent=t; return d; };
-      tr.append(td(seq), td(name), td(jl), td(birds), td(unit), td(amt));
-      el.stmtTableBody.appendChild(tr);
-    };
-    let seq=1;
-    if(totalCages>0) addRow(seq++, "籠費", "", "", CAGE_PRICE.toFixed(0), cageFee.toFixed(0));
-    state.rows.filter(isFilledRow).forEach(r=> addRow(seq++, r.item, toJinLiang(r.catty||0).text, (r.birds||0), (isNaN(r.price)?0:r.price).toFixed(0), (isNaN(r.amount)?0:r.amount).toFixed(0)));
-
-    // 小計
-    const lines = Object.keys(aggWeighted).sort().map(k=>`${k}：${toJinLiang(aggWeighted[k]).text}`);
-    if(totalXiaBirds>0) lines.push(`下雞共 ${totalXiaBirds} 隻`);
-    if(totalCages>0) lines.push(`籠費：${totalCages} 籠 × ${CAGE_PRICE} = ${cageFee.toLocaleString('zh-Hant-TW')} 元`);
-    el.stmtSubtotals.textContent = lines.length? lines.join("\n") : "（無資料）";
-
-    // 總計 + 平均價錢/重量（每隻；不含籠費）
-    const totalBirds = state.rows.filter(isFilledRow).reduce((s,r)=>s+toNum(r.birds),0);
-    const totalCatty = state.rows.filter(isFilledRow).reduce((s,r)=>s+toNum(r.catty),0).toFixed(2);
-    const grandAmt = Math.round(totalAmount + cageFee);
-    const avgPricePerBirdAll = totalBirds>0 ? Math.round(totalAmount / totalBirds) : 0;
-    const avgWeightPerBirdAll = totalBirds>0 ? toJinLiang((parseFloat(totalCatty)||0) / totalBirds).text : '';
-    el.stmtGrand.textContent = `總計：台斤 ${totalCatty}，隻數 ${totalBirds}，金額 ${grandAmt.toLocaleString('zh-Hant-TW')}｜平均價錢/隻 ${avgPricePerBirdAll} 元｜平均重量/隻 ${avgWeightPerBirdAll}`;
-  }
-
-  function persist(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
-  function restore(){
-    const raw=localStorage.getItem(STORE_KEY); if(!raw) return;
-    try{ const s=JSON.parse(raw); if(s && Array.isArray(s.rows)){ state.date=s.date||""; state.recipient=s.recipient||""; state.rows=s.rows; } }catch(_){}
-  }
-
-  
-  // ===== 產生可分享至 LINE 的對帳文字 =====
-  function buildLineText(){
-    const ymd = state.date || new Date().toISOString().slice(0,10);
-    const recv = state.recipient || '—';
-
-    const toNum = v => isNaN(parseFloat(v))?0:parseFloat(v);
-    const isFixed = name => (["仿妹(下)","仿角(下)"].includes(name));
-    const typeOf = name => isFixed(name)?'固定':'重量';
-
-    // 篩選「有填入」的列（沿用前述條件）
-    const filled = state.rows.filter(r => {
-      const hasItem = (r.item && r.item.trim() !== '');
-      const hasNum = (toNum(r.birds)>0 || toNum(r.price)>0 || toNum(r.kgGross)>0 || toNum(r.cages)>0);
-      return hasItem || hasNum;
-    });
-    let totalCages=0, totalAmount=0, totalBirds=0, totalCatty=0;
-    const lines = [];
-
-    // 先加入籠費（彙總）
-    filled.forEach(r=>{ totalCages += toNum(r.cages); totalAmount += toNum(r.amount); totalBirds += toNum(r.birds); totalCatty += toNum(r.catty); });
-    const CAGE_PRICE = 100;
-    const cageFee = Math.round(totalCages*CAGE_PRICE);
-    if(totalCages>0){
-      lines.push(`籠費：${totalCages} 籠 × ${CAGE_PRICE} = ${cageFee} 元`);
-    }
-
-    // 明細列
-    filled.forEach((r,i)=>{
-      const item = r.item || '';
-      const jl = (function(catty){
-        let jin = Math.floor(catty||0);
-        let liang = Math.round(((catty||0) - jin) * 16);
-        if(liang===16){ jin+=1; liang=0; }
-        return `${jin}斤${liang}兩`;
-      })(r.catty);
-      const unit = isNaN(r.price)?0:Math.round(r.price);
-      const amt = isNaN(r.amount)?0:Math.round(r.amount);
-      lines.push(`${i+1}. ${item}｜${jl}｜隻數 ${r.birds||0}｜單價 ${unit}｜金額 ${amt}`);
-    });
-
-    // 小計（逐品項斤兩、下雞合併）
-    const aggWeighted = {};
-    let totalXiaBirds=0;
-    filled.forEach(r=>{
-      if(typeOf(r.item)==='重量'){
-        aggWeighted[r.item]=(aggWeighted[r.item]||0)+toNum(r.catty);
-      }else{
-        totalXiaBirds += toNum(r.birds);
-      }
-    });
-    const subtotalLines = Object.keys(aggWeighted).sort().map(k=>{
-      const catty = aggWeighted[k]||0;
-      let jin = Math.floor(catty);
-      let liang = Math.round((catty - jin)*16);
-      if(liang===16){jin+=1;liang=0;}
-      return `${k}：${jin}斤${liang}兩`;
-    });
-    if(totalXiaBirds>0) subtotalLines.push(`下雞共 ${totalXiaBirds} 隻`);
-    if(totalCages>0) subtotalLines.push(`籠費：${totalCages} 籠 × 100 = ${cageFee} 元`);
-
-    const grandAmt = Math.round(totalAmount + cageFee);
-    const avgPricePerBirdAll = totalBirds>0 ? Math.round(totalAmount / totalBirds) : 0;
-    const avgWeightPerBirdAll = (function(){
-      if(totalBirds<=0) return '';
-      const cattyPer = (totalCatty||0)/totalBirds;
-      let jin = Math.floor(cattyPer);
-      let liang = Math.round((cattyPer - jin) * 16);
-      if(liang===16){jin+=1;liang=0;}
-      return `${jin}斤${liang}兩`;
-    })();
-
-    const text = [
-      `日期：${ymd}`,
-      `收貨人：${recv}`,
-      `— 對帳明細 —`,
-      ...lines,
-      `— 小計 —`,
-      ...(subtotalLines.length? subtotalLines : ['（無資料）']),
-      `— 總計 —`,
-      `台斤 ${totalCatty.toFixed(2)}｜隻數 ${totalBirds}｜金額 ${grandAmt}｜平均價錢/隻 ${avgPricePerBirdAll} 元｜平均重量/隻 ${avgWeightPerBirdAll}`
-    ].join('\n');
-    return text;
-  }
-
-  function shareToLINE(){
-    // 若沒有任何列資料，提示並不分享
-    const filled = state.rows && state.rows.filter(r => {
-      const toNum = v => isNaN(parseFloat(v))?0:parseFloat(v);
-      const hasItem = (r.item && r.item.trim() !== '');
-      const hasNum = (toNum(r.birds)>0 || toNum(r.price)>0 || toNum(r.kgGross)>0 || toNum(r.cages)>0);
-      return hasItem || hasNum;
-    });
-    if(!filled || filled.length===0){
-      alert('尚未輸入任何明細，無法分享。');
-      return;
-    }
-    const text = buildLineText();
-    const url = 'https://line.me/R/msg/text/?' + encodeURIComponent(text);
-    window.open(url, '_blank');
-  }
-
-function exportCSV(){
-    const esc = s => `"${String(s??'').replace(/"/g,'""')}"`;
-    const header = ["日期","收貨人","貨品","隻數","單價(整數)","公斤重","籠數","籠重(kg)","台斤(數值)","金額(整數)","每隻均重(斤兩)","每隻均價(整數)"];
-    const lines=[header.map(esc).join(",")];
-    let totalCages=0,totalAmount=0;
-    const filled = state.rows.filter(isFilledRow);
-    filled.forEach(r=>{
-      totalCages += toNum(r.cages); totalAmount += toNum(r.amount);
-      lines.push([
-        state.date || new Date().toISOString().slice(0,10),
-        state.recipient || "",
-        r.item, r.birds, (isNaN(r.price)?0:r.price).toFixed(0), (isNaN(r.kgGross)?0:r.kgGross).toFixed(1),
-        r.cages||0, (isNaN(r.kgCage)?0:r.kgCage).toFixed(1),
-        (isNaN(r.catty)?0:r.catty).toFixed(2),
-        (isNaN(r.amount)?0:r.amount).toFixed(0),
-        r.avgCattyPerBird_jl||"",
-        (isNaN(r.avgPricePerBird)?0:r.avgPricePerBird).toFixed(0)
-      ].map(esc).join(","));
-    });
-    if(totalCages>0){
-      const cageAmt=(totalCages*CAGE_PRICE).toFixed(0);
-      const kgCage=(totalCages*CAGE_UNIT_KG).toFixed(1);
-      lines.push([
-        state.date || new Date().toISOString().slice(0,10),
-        state.recipient || "",
-        "籠費","",CAGE_PRICE.toFixed(0),"",totalCages,kgCage,"",cageAmt,"",""
-      ].map(esc).join(","));
-    }
-    const blob = new Blob(['﻿', lines.join("\r\n")], {type:"text/csv;charset=utf-8;"});
-    const a=document.createElement('a');
-    const ymd=(state.date||new Date().toISOString().slice(0,10)).replaceAll('-','');
-    a.href=URL.createObjectURL(blob);
-    a.download=`行口專用對帳系統_v6_${ymd}.csv`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  }
-
-  // 綁定
-  el.btnAdd.onclick=()=>{ state.rows.push({item:'',birds:0,price:0,kgGross:0,cages:0,kgCage:0,catty:0,amount:0,avgCattyPerBird_jl:'',avgPricePerBird:0}); render(); computeSum(); renderStatement(); persist(); };
-  el.btnClear.onclick=()=>{ if(confirm('確定要清空全部？')){ state.rows=[]; render(); computeSum(); renderStatement(); persist(); } };
-  el.btnExport.onclick=exportCSV;
-  el.btnPrint.onclick=()=>{ window.print(); };
-  const btnLine = document.getElementById('btn-line'); if(btnLine){ btnLine.onclick=shareToLINE; }
-  el.date.onchange=()=>{ state.date=el.date.value; renderStatement(); persist(); };
-  el.recipient.oninput=()=>{ state.recipient=el.recipient.value; renderStatement(); persist(); };
-
-  // 啟動：不預設任何列
-  (function init(){
-    restore();
-    el.date.value = state.date || new Date().toISOString().slice(0,10);
-    el.recipient.value = state.recipient || "";
-    render(); computeSum(); renderStatement(); persist();
-  })();
-})();
+/* 查看歷史報表 */
+$('btn-report').onclick = ()=>{
+  const d = $('date').value || '';
+  const ym = d ? d.slice(0,7) : 'all';
+  const url = `${REPORT_BASE}?secret=${encodeURIComponent(VIEW_SECRET)}&ym=${encodeURIComponent(ym)}`;
+  window.open(url,'_blank');
+};
 </script>
-
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-      navigator.serviceWorker.register('./service-worker.js').catch(function(err){ console.error('SW reg failed:', err); });
-    });
-  }
-</script>
-
 </body>
 </html>
