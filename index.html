@@ -1,308 +1,50 @@
+<!-- File: Index.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>瀧港清算雲｜每日對帳</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>行口雲端對賬系統</title>
 <style>
-  :root{--bg:#0b0f14;--card:#131923;--bd:#1f2937;--muted:#97a3b6;--txt:#e6edf3;--accent:#2a64ff}
-  body{background:#0b0f14;color:#e6edf3;font-family:"Noto Sans TC",sans-serif;margin:0;padding:20px}
-  .card{background:#131923;border:1px solid #1f2937;border-radius:12px;margin-bottom:16px;padding:16px}
-  .card h2{margin:0 0 12px}
-  label{display:block;margin:6px 0 3px}
-  input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #2a3140;background:#0b1119;color:#fff;box-sizing:border-box}
-  .grid{display:grid;gap:12px}
-  @media(min-width:1000px){.g2{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(3,1fr)}}
-  button{padding:10px 14px;font-size:15px;border:none;border-radius:10px;cursor:pointer;background:#2a64ff;color:#fff}
-  .ghost{background:#243047}
-  table{width:100%;border-collapse:collapse;margin-top:8px}
-  th,td{border:1px solid #2b3648;padding:6px;text-align:center}
-  th{background:#1f2937}
-  #msg{margin-top:8px;color:#97a3b6}
-  .bar{position:fixed;left:16px;right:16px;bottom:16px;background:#0f1520;border:1px solid #223047;border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px}
-  .badge{background:#172132;border:1px solid #2a3650;border-radius:10px;padding:6px 10px;margin-right:6px}
-  .right{display:flex;gap:10px;flex-wrap:wrap}
-  @media print{.no-print{display:none}}
+body{font-family:"Noto Sans TC",sans-serif;margin:20px;background:#f5f5f5;color:#333}
+#loginMsg{color:red}
+input,select,button{font-size:16px;padding:6px;margin:4px 0}
+section{margin-bottom:20px;padding:10px;background:#fff;border-radius:6px}
+.hidden{display:none}
 </style>
 </head>
 <body>
-  <div class="card">
-    <h2>瀧港清算雲｜每日對帳</h2>
-    <div class="grid g3">
-      <div><label>對帳日期</label><input id="date" type="date"></div>
-      <div><label>屠宰費單價/隻</label><input id="price" type="number" value="20"></div>
-      <div class="right" style="align-items:center">
-        <span class="badge">雞籠/籠 100</span>
-        <span class="badge">下水/隻 3</span>
-        <span class="badge">雞油/台斤 10</span>
-        <span class="badge">運費/趟 300</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>行口明細</h2>
-    <div class="right no-print" style="margin-bottom:8px">
-      <button class="ghost" id="btn-add">＋新增品項列</button>
-      <button class="ghost" id="btn-clear">清空全部</button>
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th style="width:160px">行口</th>
-          <th style="width:180px">品項</th>
-          <th style="width:120px">件數</th>
-          <th style="width:120px">隻數</th>
-          <th class="no-print" style="width:100px">刪除</th>
-        </tr>
-      </thead>
-      <tbody id="rowsAll"></tbody>
-      <tfoot>
-        <tr>
-          <th>合計</th>
-          <th>—</th>
-          <th id="sum-cages">0</th>
-          <th id="sum-birds">0</th>
-          <th class="no-print">—</th>
-        </tr>
-      </tfoot>
-    </table>
-  </div>
-
-  <div class="card">
-    <h2>其他欄位</h2>
-    <div class="grid g3">
-      <div><label>雞油(台斤)</label><input id="oilCatty" type="number" step="0.1"></div>
-      <div><label>運輸趟次</label><input id="trips" type="number"></div>
-      <div><label>備註（選填）</label><input id="note"></div>
-    </div>
-    <div class="no-print" style="margin-top:12px">
-      <button id="btn-upload">送出紀錄</button>
-      <button id="btn-report" class="ghost">查看歷史報表</button>
-      <span id="msg"></span>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>今日摘要與試算</h2>
-    <div id="summaryText" style="margin-bottom:8px;color:#cfe0ff"></div>
-    <table>
-      <thead>
-        <tr>
-          <th>日期</th><th>行口</th><th>品項摘要</th><th>件數</th><th>隻數</th>
-          <th>雞籠</th><th>屠宰費</th><th>下水</th><th>雞油重量</th>
-          <th>雞油金額</th><th>運輸趟次</th><th>今日應收款</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </div>
-
-  <div class="bar no-print">
-    <div>
-      <span class="badge">件數 <span id="mini-cages">0</span></span>
-      <span class="badge">隻數 <span id="mini-birds">0</span></span>
-      <span class="badge">雞油 <span id="mini-oil">0</span></span>
-      <span class="badge">趟數 <span id="mini-trips">0</span></span>
-    </div>
-    <div><b>今日應收款 NT$ <span id="mini-net">0</span></b></div>
-  </div>
-
+<h1>行口雲端對賬系統</h1>
+<div id="loginMsg">登入中…</div>
+<section id="formSec" class="hidden">
+  <h2 id="bankName"></h2>
+  <label>日期 <input type="date" id="date"></label><br>
+  <label>品名 <input list="prodList" id="product"></label>
+  <datalist id="prodList"></datalist><br>
+  <label>G台斤 <input type="number" id="g"></label><br>
+  <label>J數量/籠或隻 <input type="number" id="j"></label><br>
+  <label>單價 <input type="number" id="price"></label><br>
+  <label>門市/去向 <input id="store"></label><br>
+  <label>批次 <input id="batch"></label><br>
+  <label>備註 <input id="note"></label><br>
+  <button id="submitBtn">送出</button>
+  <span id="msg"></span>
+</section>
+<section id="reportSec" class="hidden">
+  <h2>報表</h2>
+  <label>起 <input type="date" id="s"></label>
+  <label>訖 <input type="date" id="e"></label>
+  <button id="reportBtn">產出報表</button>
+  <div id="report"></div>
+</section>
 <script>
-/* 後端寫入與只讀報表（用你的既有 URL/密鑰） */
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxsIMCDNHxngJGH6zx9-o9t8jJPNeW_3vx8jSj3WyVW5rF8Go2aVfKmo3XI53eqsWH3/exec';
-const POST_SECRET = '88888888';
-const REPORT_BASE = 'https://script.google.com/macros/s/AKfycbxsIMCDNHxngJGH6zx9-o9t8jJPNeW_3vx8jSj3WyVW5rF8Go2aVfKmo3XI53eqsWH3/exec';
-const VIEW_SECRET = 'view-only-9999';
-
-/* 固定三家行口 + 可新增任意列 */
-const VENDORS = ['林學藝','吳富城','黃德源'];
-const ITEM_OPTIONS = ['','仿母','仿角','文母','文角','烏角','下雞'];
-
-function $(id){return document.getElementById(id)}
-function num(v){const n=parseFloat(v);return isNaN(n)?0:n}
-
-/* === 自動日期（今日、跨日自動更新） === */
-function todayStr(){ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
-function maybeUpdateDate(){ const inp=$('date'); const t=todayStr(); if(!inp.value||inp.value!==t){ inp.value=t; calcAndPreview(); } }
-function msUntilNextMidnight(){ const now=new Date(); const next=new Date(now); next.setHours(24,0,0,0); return next-now+1000; }
-function scheduleMidnightTick(){ setTimeout(()=>{ maybeUpdateDate(); scheduleMidnightTick(); }, msUntilNextMidnight()); }
-maybeUpdateDate(); document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) maybeUpdateDate(); }); scheduleMidnightTick();
-
-/* 建立一列（行口、品項、件數、隻數） */
-function addRow(vendor='', item='', c=0, b=0){
-  const tr=document.createElement('tr');
-  // 行口
-  const tdV=document.createElement('td');
-  const selV=document.createElement('select');
-  [''].concat(VENDORS).forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;selV.appendChild(o)});
-  selV.value=vendor; tdV.appendChild(selV);
-  // 品項
-  const tdI=document.createElement('td');
-  const selI=document.createElement('select');
-  ITEM_OPTIONS.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;selI.appendChild(o)});
-  selI.value=item; tdI.appendChild(selI);
-  // 件數
-  const tdC=document.createElement('td');const inC=document.createElement('input');inC.type='number';inC.value=c;tdC.appendChild(inC);
-  // 隻數
-  const tdB=document.createElement('td');const inB=document.createElement('input');inB.type='number';inB.value=b;tdB.appendChild(inB);
-  // 刪除
-  const tdD=document.createElement('td');tdD.className='no-print';
-  const btn=document.createElement('button');btn.textContent='刪除';btn.className='ghost';
-  btn.onclick=()=>{tr.remove(); calcAndPreview();}; tdD.appendChild(btn);
-  tr.append(tdV,tdI,tdC,tdB,tdD);
-  [selV,selI,inC,inB].forEach(el=>el.addEventListener('input',calcAndPreview));
-  $('rowsAll').appendChild(tr);
+let ctx=null;let meta=null;
+function init(){
+  google.script.run.withSuccessHandler(r=>{ctx=r; if(!ctx.bank){document.getElementById('loginMsg').textContent='非白名單使用者';return;} document.getElementById('loginMsg').classList.add('hidden'); document.getElementById('formSec').classList.remove('hidden'); document.getElementById('reportSec').classList.remove('hidden');document.getElementById('bankName').textContent='我的行口：'+ctx.bank; google.script.run.withSuccessHandler(m=>{meta=m;const dl=document.getElementById('prodList');m.products.forEach(p=>{const o=document.createElement('option');o.value=p[1];dl.appendChild(o);});}).loadMeta();}).getUserContext();
 }
-function clearAllRows(){ $('rowsAll').innerHTML=''; calcAndPreview(); }
-
-/* 預設三家行口三列 */
-addRow('林學藝','',0,0);
-addRow('吳富城','',0,0);
-addRow('黃德源','',0,0);
-
-/* UI 按鈕 */
-$('btn-add').onclick = ()=> addRow('', '', 0, 0);
-$('btn-clear').onclick = ()=> clearAllRows();
-
-/* 人性化摘要（含沒進貨提示） */
-function humanSummaryByVendor(){
-  const perVendor = {};
-  [...$('rowsAll').querySelectorAll('tr')].forEach(tr=>{
-    const vendor = tr.querySelector('td:nth-child(1) select').value.trim();
-    const item   = tr.querySelector('td:nth-child(2) select').value.trim();
-    const c      = num(tr.querySelector('td:nth-child(3) input').value);
-    const b      = num(tr.querySelector('td:nth-child(4) input').value);
-    if(!vendor) return;
-    if(!perVendor[vendor]) perVendor[vendor]={c:0,b:0,items:{}};
-    perVendor[vendor].c+=c; perVendor[vendor].b+=b;
-    if(item){
-      if(!perVendor[vendor].items[item]) perVendor[vendor].items[item]={c:0,b:0};
-      perVendor[vendor].items[item].c+=c;
-      perVendor[vendor].items[item].b+=b;
-    }
-  });
-  const parts=[];
-  VENDORS.forEach(v=>{
-    if(!(v in perVendor)) return;
-    const rec=perVendor[v];
-    if(rec.c===0 && rec.b===0){ parts.push(`${v}今天沒有進貨`); }
-    else{
-      const itemSent = Object.entries(rec.items).map(([name,val])=>`${name}有 ${val.c} 件共 ${val.b} 隻`);
-      parts.push(itemSent.length? `${v}：今天${itemSent.join('，')}` : `${v}今天沒有進貨`);
-    }
-  });
-  return parts.length ? parts.join('；') : '（今天尚未輸入任何行口與品項）';
-}
-
-/* 計算 + 預覽 + 明細說明 + 即時列 */
-function calcAndPreview(){
-  const d = $('date').value.trim();
-  const price = num($('price').value);
-
-  // 合計件/隻
-  let totalC=0,totalB=0;
-  [...$('rowsAll').querySelectorAll('tr')].forEach(tr=>{
-    totalC += num(tr.querySelector('td:nth-child(3) input').value);
-    totalB += num(tr.querySelector('td:nth-child(4) input').value);
-  });
-  $('sum-cages').textContent = totalC;
-  $('sum-birds').textContent = totalB;
-
-  const oil   = num($('oilCatty').value);
-  const trips = num($('trips').value);
-
-  const cageFee   = totalC * 100;
-  const slaughter = totalB * price;
-  const offal     = totalB * 3;
-  const oilAmt    = oil   * 10;
-  const freight   = trips * 300;
-
-  // 貨款合計
-  const netVendor = (slaughter - offal) + freight - cageFee - oilAmt;
-
-  // 行口組合（去重）
-  const vendorSet=new Set();
-  [...$('rowsAll').querySelectorAll('tr')].forEach(tr=>{
-    const v=tr.querySelector('td:nth-child(1) select').value.trim();
-    if(v) vendorSet.add(v);
-  });
-  const vendorCombo = vendorSet.size ? Array.from(vendorSet).join('+') : '（未選擇）';
-
-  // 人性化摘要 + 費用明細 + 公式
-  const human = humanSummaryByVendor();
-  const detailHTML = `
-    <div>${human}</div>
-    <div style="margin-top:8px">費用明細：</div>
-    <ul style="margin:6px 0 0 16px; text-align:left; line-height:1.6">
-      <li>雞籠：${totalC} 件 × 100 元 = ${cageFee} 元</li>
-      <li>屠宰費：${totalB} 隻 × ${price} 元 = ${slaughter} 元</li>
-      <li>下水：${totalB} 隻 × 3 元 = ${offal} 元</li>
-      <li>雞油金額：${oil} 台斤 × 10 元 = ${oilAmt} 元</li>
-      <li>運費：${trips} 趟 × 300 元 = ${freight} 元</li>
-    </ul>
-    <div style="margin-top:8px"><b>今日貨款：${slaughter} − ${offal} + ${freight} − ${cageFee} − ${oilAmt} = ${netVendor} 元</b></div>
-  `;
-  $('summaryText').innerHTML = detailHTML;
-
-  // 預覽表格
-  const tb = $('tbody'); tb.innerHTML='';
-  const tr = document.createElement('tr');
-  [ d, vendorCombo, human, totalC, totalB,
-    cageFee, slaughter, offal, oil, oilAmt, trips, netVendor
-  ].forEach(v=>{ const td=document.createElement('td'); td.textContent=v; tr.appendChild(td); });
-  tb.appendChild(tr);
-
-  // 底部即時列
-  $('mini-cages').textContent = totalC;
-  $('mini-birds').textContent = totalB;
-  $('mini-oil').textContent   = oil;
-  $('mini-trips').textContent = trips;
-  $('mini-net').textContent   = netVendor.toLocaleString('zh-Hant-TW');
-
-  return {d, vendorCombo, human, totalC, totalB, oil, trips, price, netVendor};
-}
-
-/* 初次計算與輸入監聽 */
-calcAndPreview();
-document.addEventListener('input', e=>{
-  if(['date','price','oilCatty','trips','note'].includes(e.target.id)) calcAndPreview();
-});
-
-/* 送出紀錄（no-cors；後端重算並追加寫入） */
-$('btn-upload').onclick = async ()=>{
-  const snap = calcAndPreview();
-  const body = {
-    date: snap.d,
-    vendor: snap.vendorCombo,
-    item: snap.human,
-    cages: snap.totalC,
-    birds: snap.totalB,
-    oilCatty: snap.oil,
-    trips: snap.trips,
-    pricePerBird: snap.price,
-    note: $('note').value.trim(),
-    secret: POST_SECRET,
-    ts: Date.now()
-  };
-  $('btn-upload').disabled = true; $('msg').textContent = '上傳中…';
-  try{
-    await fetch(WEBAPP_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(body) });
-    $('msg').textContent = '✅ 已送出。請到試算表檢查是否新增一列。';
-  }catch(e){
-    $('msg').textContent = '上傳失敗：'+e;
-  }finally{
-    $('btn-upload').disabled = false;
-  }
-};
-
-/* 查看歷史報表 */
-$('btn-report').onclick = ()=>{
-  const d = $('date').value || '';
-  const ym = d ? d.slice(0,7) : 'all';
-  const url = `${REPORT_BASE}?secret=${encodeURIComponent(VIEW_SECRET)}&ym=${encodeURIComponent(ym)}`;
-  window.open(url,'_blank');
-};
+document.getElementById('submitBtn').onclick=function(){const rec={date:date.value,product:product.value,g:g.value,j:j.value,price:price.value,store:store.value,batch:batch.value,note:note.value,bank:ctx.bank};google.script.run.withSuccessHandler(res=>{if(res.status==='PASS'){msg.textContent='已寫入';}else{msg.textContent=res.message||res.status;}}).submitRaw(rec);};
+document.getElementById('reportBtn').onclick=function(){const s=new Date(document.getElementById('s').value);const e=new Date(document.getElementById('e').value);google.script.run.withSuccessHandler(html=>{document.getElementById('report').innerHTML=html;}).showReport(s,e);};
+window.addEventListener('load',init);
 </script>
 </body>
 </html>
