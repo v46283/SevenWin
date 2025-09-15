@@ -1,0 +1,6 @@
+<!-- File: DateRange.html -->
+<form>
+起<input type="date" id="s"><br>
+訖<input type="date" id="e"><br>
+<button onclick="google.script.run.withSuccessHandler(() => google.script.host.close()).showReport(new Date(document.getElementById('s').value),new Date(document.getElementById('e').value));return false;">確定</button>
+</form>
